@@ -1,0 +1,141 @@
+---
+title: "Flight Incidents FiveThirtyEight"
+author: "Bill Lang"
+date: "11/30/2019"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(fivethirtyeight)
+library(dplyr)
+library(ggplot2)
+library(tidyverse)
+library(scales)
+tinytex::install_tinytex()
+```
+
+```{r}
+
+airline_safety1 <- airline_safety %>% 
+  select(airline, fatalities_85_99, fatalities_00_14, avail_seat_km_per_week) %>% 
+  mutate(km_trillion = avail_seat_km_per_week*(52)*(14),
+           fatalities_85_99a = fatalities_85_99/km_trillion*1000000000000,
+           fatalities_00_14a = fatalities_00_14/km_trillion*1000000000000)
+
+airline_safety1 %>% 
+  ggplot(mapping = aes(x = fatalities_85_99a, y = fatalities_00_14a))+
+  geom_point(size = 2, alpha = 0.5)+
+  geom_smooth(method = "lm", se = FALSE, color = 'red', size = 1.3)+ 
+  scale_y_continuous(breaks = c(0,250,500,750,1000,1250,1500),
+                     labels = c(0,250,500,750,"1,000", "1,250","1,500"), 
+                     limits = c(0, 1500))+
+  scale_x_continuous(breaks = c(0,250,500,750,1000,1250,1500),
+                     labels = c(0,250,500,750,"1,000", "1,250","1,500"), 
+                     limits = c(0, 1500))+
+  geom_hline(yintercept = 0,color="black") + 
+  geom_vline(xintercept = 0,color="black") + 
+  geom_text(x = 40, y = 1400, label = "Kenya \nAirways", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 65, y = 750, label = "Malaysia\n Airlines", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 940, y = 420, label = "China \nAirlines", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 950, y = 200, label = "Pakistan \nInternational", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 1150, y = 50, label = "Avianca", size = 3.6, hjust = 0, color = 'dim gray')+
+  labs(title = "Fatalities by Airlines Are Highly Unpredictable", 
+       subtitle = "Fatalitis adjusted for seats available and distance traveled \n(deaths per 1 trillion seat kilometers)", 
+       x = "1985-99", 
+       y = "2000-14")+
+  theme(
+        axis.ticks = element_blank(),
+        panel.grid.major = element_line(color = 'light gray'),   
+        panel.background = element_blank(), 
+        plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
+        plot.subtitle = element_text(hjust = 0))+
+   coord_equal(ratio = 1) 
+
+```
+
+[Link to the Five Thirty Eight article I used for this project.](https://fivethirtyeight.com/features/should-travelers-avoid-flying-airlines-that-have-had-crashes-in-the-past/)
+
+
+
+**Technical Discussion**
+
+First we needed to select only the variables we would be using. The following mutation process first creates ``` km_trillion ``` which is the 14 year total of the available seats multiplied by the kilometers traveled. The fatalities data is then divded by this new column and multiplied by 1 trillion to reach a new pair of columns that count the fatalities in the given period per 1 trillion kilometers flown. 
+
+```{r}
+head(airline_safety)
+
+airline_safety1 <- airline_safety %>% 
+  select(airline, fatalities_85_99, fatalities_00_14, avail_seat_km_per_week) %>% 
+  mutate(km_trillion = avail_seat_km_per_week*(52)*(14),
+           fatalities_85_99a = fatalities_85_99/km_trillion*1000000000000,
+           fatalities_00_14a = fatalities_00_14/km_trillion*1000000000000)
+
+head(airline_safety1)
+```
+
+
+The scatter plot itself is simple; however, some cleaning was required to reach the same formatting standard as Five Thirty Eight. The points are not as dark or small as the default, the linear model requied a removal of the standard error, ashift in size, and a color swap. The scales also required some coercing to ensure that both axis were equal in length and to enure their lables included commas in their numbers. 
+
+```{r, eval = FALSE}
+
+airline_safety1 %>% 
+  ggplot(mapping = aes(x = fatalities_85_99a, y = fatalities_00_14a))+
+  geom_point(size = 2, alpha = 0.5)+
+  geom_smooth(method = "lm", se = FALSE, color = 'red', size = 1.3)+ 
+  scale_y_continuous(breaks = c(0,250,500,750,1000,1250,1500),
+                     labels = c(0,250,500,750,"1,000", "1,250","1,500"), 
+                     limits = c(0, 1500))+
+  scale_x_continuous(breaks = c(0,250,500,750,1000,1250,1500),
+                     labels = c(0,250,500,750,"1,000", "1,250","1,500"), 
+                     limits = c(0, 1500))
+
+```
+
+
+Each ggplot object in this chunk is to match the formatting of the Five Thirty Eight article as exactly as possible. The first part of this chunk creates two black lines over the the edges of the first quadrant. Each geom_text piece was given a shift in color and left justification. The labels are copied word for word from the article. 
+
+```{r, eval = FALSE}
+  geom_hline(yintercept = 0,color="black") + 
+  geom_vline(xintercept = 0,color="black") + 
+  geom_text(x = 40, y = 1400, label = "Kenya \nAirways", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 65, y = 750, label = "Malaysia\n Airlines", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 940, y = 420, label = "China \nAirlines", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 950, y = 200, label = "Pakistan \nInternational", size = 3.6, hjust = 0, color = 'dim gray')+
+  geom_text(x = 1150, y = 50, label = "Avianca", size = 3.6, hjust = 0, color = 'dim gray')+
+  labs(title = "Fatalities by Airlines Are Highly Unpredictable", 
+       subtitle = "Fatalitis adjusted for seats available and distance traveled \n(deaths per 1 trillion seat kilometers)", 
+       x = "1985-99", 
+       y = "2000-14")+
+```
+
+
+This final chunk creates modifies the theme to further fit the Five Thirty Eight graphic. Removing the ticks on the axis point, lightening the grid lines, and removing the background gray style. The titles and subtitle are also further modified, incereasing the title size, bolding it, and left adjusting it. The plot subtitle is as left adjusted. Finally the coordiantes of the axis are set equal to each other. 
+
+```{r, eval = FALSE}
+
+  theme(
+        axis.ticks = element_blank(),
+        panel.grid.major = element_line(color = 'light gray'),   
+        panel.background = element_blank(), 
+        plot.title = element_text(hjust = 0, size = rel(1.5), face = "bold"),
+        plot.subtitle = element_text(hjust = 0))+
+   coord_equal(ratio = 1) 
+
+```
+
+
+**Data Graphic Context**
+
+Released in the wake of the downing of Malaysia Airlines Flight 17, FiveThirtyEight published an article and released data surrounding the historic rates of fatalities in air travel broken down by airline. As noted in the article the author of the data makes two simplifying assumptions to make this analysis work with such simple data sets. First that the data includes incidents regardless of cause and second that the data display is based on the number of seat kilometers that the airline flies which is the number of seats multiplied by the number of kilometers that airline flies. The graphic in this report is the comparison of number of fatalities between the two 14-year periods by airline. The applied linear model shows graphically that this relationship is non-predictable based solely on number of fatalities (per 1 trillion seat kilometers) as the line is simply horizontal. Meaning that no matter how many fatalities occured on a certain airline between 1985-1999 (x-axis) is unable to predict anything unquie about the probability of fatalities in 2000-2014 (y-axis). 
+
+
+
+
+
+
+
